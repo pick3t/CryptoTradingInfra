@@ -7,6 +7,9 @@
 
 #include "ring_buffer.hpp"
 
+namespace CryptoTradingInfra {
+namespace Test {
+
 constexpr int NUM_PRODUCERS = 4;
 constexpr int NUM_CONSUMERS = 4;
 constexpr int ITEMS_PER_PRODUCER = 10000;
@@ -50,7 +53,7 @@ void Consumer() {
     }
 }
 
-int main() {
+void TestRingBuffer() {
     std::cout << "Test started. " << std::endl;
     std::vector<std::thread> producers;
     for (int i = 0; i < NUM_PRODUCERS; ++i) {
@@ -77,6 +80,7 @@ int main() {
         }
     }
     std::cout << "Test completed. " << results.size() << " items popped." << std::endl;
+}
 
-    return 0;
+}
 }

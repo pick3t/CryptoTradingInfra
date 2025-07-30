@@ -1,15 +1,17 @@
 # Utility tests
-add_executable(test_ring_buffer
+add_executable(test
     test_ring_buffer.cpp
+    test_market_updates_recv.cpp
+    test_main.cpp
 )
-target_link_libraries(test_ring_buffer PRIVATE utils)
+target_link_libraries(test PRIVATE utils data)
 
 # Test suite aggregation
 add_custom_target(run_tests
     DEPENDS 
-    test_ring_buffer
+    test
     COMMAND ctest --output-on-failure
 )
 
 enable_testing()
-add_test(NAME ring_buffer COMMAND test_ring_buffer)
+add_test(NAME test COMMAND test)
