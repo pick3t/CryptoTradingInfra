@@ -5,11 +5,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_FLAGS "-I/opt/homebrew/opt/llvm/include ${CMAKE_CXX_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/opt/homebrew/opt/llvm/lib")
+if (APPLE)
+    set(CMAKE_CXX_FLAGS "-I/opt/homebrew/opt/llvm/include ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/opt/homebrew/opt/llvm/lib")
 
-set(CMAKE_C_COMPILER "/opt/homebrew/opt/llvm/bin/clang")
-set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++")
+    set(CMAKE_C_COMPILER "/opt/homebrew/opt/llvm/bin/clang")
+    set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++")
+endif()
 
 # Configuration options
 option(BUILD_TESTS "Build test programs" ON)

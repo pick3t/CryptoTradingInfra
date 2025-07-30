@@ -18,17 +18,23 @@ ConcurrentRingBuffer<int, RING_CAPACITY> buffer;
 std::set<int> results;
 std::mutex results_mutex;
 
-void producer(int id) {
+void Producer(int id) {
     int base = id * ITEMS_PER_PRODUCER;
     for (int i = 0; i < ITEMS_PER_PRODUCER; ++i) {
         int value = base + i;
-        while (!buffer.Push(value)) {
-            std::this_thread::yield();
+        if (i < 2) {
+            while (!buffer.Push(value)) {
+                std::this_thread::yield();
+            }
+        } else {
+            while (!buffer.Emplace(value)) {
+                std::this_thread::yield();
+            }
         }
     }
 }
 
-void consumer() {
+void Consumer() {
     int value;
     while (true) {
         if (buffer.Pop(value)) {
@@ -48,12 +54,12 @@ int main() {
     std::cout << "Test started. " << std::endl;
     std::vector<std::thread> producers;
     for (int i = 0; i < NUM_PRODUCERS; ++i) {
-        producers.emplace_back(producer, i);
+        producers.emplace_back(Producer, i);
     }
 
     std::vector<std::thread> consumers;
     for (int i = 0; i < NUM_CONSUMERS; ++i) {
-        consumers.emplace_back(consumer);
+        consumers.emplace_back(Consumer);
     }
 
     for (auto& t : producers) {

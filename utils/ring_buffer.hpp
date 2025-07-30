@@ -50,6 +50,33 @@ class ConcurrentRingBuffer
     using Container = std::vector<Node>;
     Container buffer;
 
+    template <typename F>
+    bool AcquireAndSet(F&& setNodeData)
+    {
+        size_t pos = tail.Inner().load(std::memory_order_relaxed);
+
+        while (true) {
+            // (CAP - 1) acts as a mask to deal with wrap-around
+            auto& node = buffer[pos & (CAP - 1)];
+            size_t seq = node.seq.load(std::memory_order_acquire);
+            intptr_t dif = seq - pos;
+
+            if (dif == 0) {
+                if (tail.Inner().compare_exchange_weak(pos, pos + 1, std::memory_order_relaxed)) {
+                    setNodeData(node.data);
+                    node.seq.store(pos + 1, std::memory_order_release);
+                    return true;
+                }
+            }
+
+            if (dif < 0) {
+                return false; // buffer is full
+            }
+
+            pos = tail.Inner().load(std::memory_order_relaxed);
+        }
+    }
+
 public:
     ConcurrentRingBuffer() : head {}, tail {}, buffer { CAP }
     {
@@ -67,28 +94,17 @@ public:
     template <typename U = T>
     bool Push(U&& item)
     {
-        size_t pos = tail.Inner().load(std::memory_order_relaxed);
+        return AcquireAndSet([&](T& data) {
+            data = std::forward<U>(item);
+        });
+    }
 
-        while (true) {
-            // (CAP - 1) acts as a mask to deal with wrap-around
-            auto& node = buffer[pos & (CAP - 1)];
-            size_t seq = node.seq.load(std::memory_order_acquire);
-            intptr_t dif = seq - pos;
-
-            if (dif == 0) {
-                if (tail.Inner().compare_exchange_weak(pos, pos + 1, std::memory_order_relaxed)) {
-                    node.data = std::forward<U>(item);
-                    node.seq.store(pos + 1, std::memory_order_release);
-                    return true;
-                }
-            }
-
-            if (dif < 0) {
-                return false; // buffer is full
-            }
-
-            pos = tail.Inner().load(std::memory_order_relaxed);
-        }
+    template <typename... Args>
+    bool Emplace(Args&&... args)
+    {
+        return AcquireAndSet([&](T& data) {
+            new (&data) T(std::forward<Args>(args)...);
+        });
     }
 
     bool Pop(T& item)
