@@ -18,6 +18,7 @@ option(BUILD_TESTS "Build test programs" ON)
 option(BUILD_BENCHMARKS "Build benchmark programs" OFF)
 
 add_subdirectory(utils)
+add_subdirectory(data)
 
 # Main application
 add_executable(trading_engine

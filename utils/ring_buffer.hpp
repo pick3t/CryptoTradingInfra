@@ -1,3 +1,6 @@
+#ifndef CRYPTO_TRADING_INFRA_RING_BUFFER
+#define CRYPTO_TRADING_INFRA_RING_BUFFER
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -149,3 +152,5 @@ public:
         return (t - h) >= CAP;
     }
 };
+
+#endif
