@@ -9,42 +9,26 @@
 
 #include "math.hpp"
 
-template <typename T>
-class alignas(std::hardware_destructive_interference_size) PaddedAtomic
-{
-    std::atomic<T> value;
-    char padding[std::hardware_destructive_interference_size - sizeof(value)];
-public:
-    std::atomic<T>& Inner()
-    {
-        return value;
-    }
+/* sourced from examples in cpp reference, size of cache line is typically 64 bytes on most modern systems*/
+#ifdef __cpp_lib_hardware_interference_size
+    using std::hardware_constructive_interference_size;
+    using std::hardware_destructive_interference_size;
+#else
+    constexpr std::size_t hardware_constructive_interference_size = 64;
+    constexpr std::size_t hardware_destructive_interference_size = 64;
+#endif
 
-    const std::atomic<T>& Inner() const
-    {
-        return value;
-    }
-
-    operator std::atomic<T>&()
-    {
-        return value;
-    }
-
-    operator const std::atomic<T>&() const
-    {
-        return value;
-    }
-};
+#define CACHE_LINE_ALIGNED alignas(hardware_destructive_interference_size)
 
 constexpr size_t DEFAULT_CAPACITY = 1024;
 template <typename T, size_t Capacity = DEFAULT_CAPACITY>
 class ConcurrentRingBuffer
 {
-    PaddedAtomic<size_t> head;
-    PaddedAtomic<size_t> tail;
+    CACHE_LINE_ALIGNED std::atomic<uint64_t> head;
+    CACHE_LINE_ALIGNED std::atomic<uint64_t> tail;
 
     struct Node {
-        std::atomic<size_t> seq;
+        std::atomic<uint64_t> seq;
         T data;
     };
 
@@ -56,16 +40,16 @@ class ConcurrentRingBuffer
     template <typename F>
     bool AcquireAndSet(F&& setNodeData)
     {
-        size_t pos = tail.Inner().load(std::memory_order_relaxed);
+        auto pos = tail.load(std::memory_order_relaxed);
 
         while (true) {
             // (CAP - 1) acts as a mask to deal with wrap-around
             auto& node = buffer[pos & (CAP - 1)];
-            size_t seq = node.seq.load(std::memory_order_acquire);
-            intptr_t dif = seq - pos;
+            auto seq = node.seq.load(std::memory_order_acquire);
+            int64_t dif = seq - pos;
 
             if (dif == 0) {
-                if (tail.Inner().compare_exchange_weak(pos, pos + 1, std::memory_order_relaxed)) {
+                if (tail.compare_exchange_weak(pos, pos + 1, std::memory_order_relaxed)) {
                     setNodeData(node.data);
                     node.seq.store(pos + 1, std::memory_order_release);
                     return true;
@@ -76,14 +60,14 @@ class ConcurrentRingBuffer
                 return false; // buffer is full
             }
 
-            pos = tail.Inner().load(std::memory_order_relaxed);
+            pos = tail.load(std::memory_order_relaxed);
         }
     }
 
 public:
     ConcurrentRingBuffer() : head {}, tail {}, buffer { CAP }
     {
-        for (size_t i = 0; i < CAP; ++i) {
+        for (auto i = 0; i < CAP; ++i) {
             buffer[i].seq.store(i, std::memory_order_relaxed);
         }
     }
@@ -112,15 +96,15 @@ public:
 
     bool Pop(T& item)
     {
-        size_t pos = head.Inner().load(std::memory_order_relaxed);
+        auto pos = head.load(std::memory_order_relaxed);
 
         while (true) {
             auto& node = buffer[pos & (CAP - 1)];
-            size_t seq = node.seq.load(std::memory_order_acquire);
-            intptr_t dif = seq - (pos + 1);
+            auto seq = node.seq.load(std::memory_order_acquire);
+            int64_t dif = seq - (pos + 1);
 
             if (dif == 0) {
-                if (head.Inner().compare_exchange_weak(pos, pos + 1, std::memory_order_relaxed)) {
+                if (head.compare_exchange_weak(pos, pos + 1, std::memory_order_relaxed)) {
                     item = std::move(node.data);
                     node.seq.store(pos + CAP, std::memory_order_release);
                     return true;
@@ -131,7 +115,7 @@ public:
                 return false; // buffer is empty
             }
 
-            pos = head.Inner().load(std::memory_order_relaxed);
+            pos = head.load(std::memory_order_relaxed);
         }
     }
 
@@ -139,16 +123,13 @@ public:
     // once called
     bool Empty() const
     {
-        size_t h = head.Inner().load(std::memory_order_acquire);
-        size_t t = tail.Inner().load(std::memory_order_acquire);
-        return h == t;
+        return head.load(std::memory_order_acquire) == tail.load(std::memory_order_acquire);
     }
 
     bool Full() const
     {
-        size_t t = tail.Inner().load(std::memory_order_acquire);
-        size_t h = head.Inner().load(std::memory_order_acquire);
-        // We assume CAP fits in size_t and wrapping is well-defined
+        auto t = tail.load(std::memory_order_acquire);
+        auto h = head.load(std::memory_order_acquire);
         return (t - h) >= CAP;
     }
 };
