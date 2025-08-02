@@ -1,0 +1,7 @@
+set(CMAKE_C_COMPILER   "/opt/homebrew/opt/llvm/bin/clang"   CACHE STRING "" FORCE)
+set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++" CACHE STRING "" FORCE)
+set(CMAKE_LINKER       "/opt/homebrew/opt/llvm/bin/lld"     CACHE STRING "" FORCE)
+set(CMAKE_AR           "/opt/homebrew/opt/llvm/bin/llvm-ar" CACHE STRING "" FORCE)
+set(CMAKE_RANLIB       "/opt/homebrew/opt/llvm/bin/llvm-ranlib" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/opt/homebrew/opt/llvm/include")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/opt/homebrew/opt/llvm/lib")
