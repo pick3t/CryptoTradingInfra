@@ -2,6 +2,7 @@
 add_executable(test
     test_ring_buffer.cpp
     test_market_updates_recv.cpp
+    test_order_book.cpp
     test_main.cpp
 )
 target_link_libraries(test PRIVATE utils data)
