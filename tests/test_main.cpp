@@ -7,6 +7,6 @@ int main()
     CryptoTradingInfra::Test::TestOrderBookCrossTrades();
     CryptoTradingInfra::Test::TestOrderBookMultiThreads();
 
-    /* CryptoTradingInfra::Test::TestMarketUpdatesRecv(); */
+    CryptoTradingInfra::Test::TestMarketUpdatesRecv();
     return 0;
 }

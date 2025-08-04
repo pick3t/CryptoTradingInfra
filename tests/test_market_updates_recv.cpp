@@ -16,6 +16,7 @@
 
 #include "market_update.hpp"
 #include "ring_buffer.hpp"
+#include "order_book.hpp"
 
 namespace CryptoTradingInfra {
 namespace Test {
@@ -36,7 +37,7 @@ struct ReceiverStatus {
     }
 };
 
-void UdpReceiverThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuffer, std::atomic<bool>& runFlag,
+void UdpReceiverThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuffer, std::atomic<bool>& g_runFlag,
                        uint16_t port, ReceiverStatus& status)
 {
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -59,7 +60,7 @@ void UdpReceiverThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuff
     std::cout << "Port " << port << " is listening\n" << std::flush;
 
     char buffer[sizeof(MarketUpdate)];
-    while (runFlag.load(std::memory_order_relaxed)) {
+    while (g_runFlag.load(std::memory_order_relaxed)) {
         auto received = recv(sockfd, buffer, sizeof(buffer), MSG_DONTWAIT);
         ++status.packetsRecv;
         if (received == sizeof(MarketUpdate)) {
@@ -77,13 +78,15 @@ void UdpReceiverThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuff
 }
 
 std::mutex g_consumerCoutMutex;
-void ConsumerThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuffer, std::atomic<bool>& runFlag,
+OrderBook g_orderBook;
+void ConsumerThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuffer, std::atomic<bool>& g_runFlag,
                     int consumerId, uint64_t& packetsProcessed)
 {
     MarketUpdate update;
-    while (runFlag.load(std::memory_order_relaxed)) {
+    while (g_runFlag.load(std::memory_order_relaxed)) {
         if (ringBuffer.Pop(update)) {
             ++packetsProcessed;
+            g_orderBook.UpdateOrderBook(update);
         } else {
             std::this_thread::yield();
         }
@@ -92,12 +95,12 @@ void ConsumerThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuffer,
     std::cout << "[Consumer " << consumerId << "] Processed: " << packetsProcessed << " updates." << std::endl;
 }
 
-std::atomic<bool> runFlag { true };
+std::atomic<bool> g_runFlag { true };
 
 void SignalHandler(int signum)
 {
     std::cout << "\nSignal (" << signum << ") received, shutting down.\n" << std::flush;
-    runFlag.store(false);
+    g_runFlag.store(false);
 }
 
 void TestMarketUpdatesRecv()
@@ -110,18 +113,18 @@ void TestMarketUpdatesRecv()
     ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE> ringBuffer;
 
     ReceiverStatus status { 0 };
-    std::thread producer(UdpReceiverThread, std::ref(ringBuffer), std::ref(runFlag), udpPort, std::ref(status));
+    std::thread producer(UdpReceiverThread, std::ref(ringBuffer), std::ref(g_runFlag), udpPort, std::ref(status));
 
     std::vector<std::thread> consumers;
     uint64_t packetsProcessed[consumerCount] = { 0 };
     for (int i = 0; i < consumerCount; ++i) {
-        consumers.emplace_back(ConsumerThread, std::ref(ringBuffer), std::ref(runFlag), i,
+        consumers.emplace_back(ConsumerThread, std::ref(ringBuffer), std::ref(g_runFlag), i,
                                std::ref(packetsProcessed[i]));
     }
 
     std::cout << "Receiver running. Press Ctrl+C to stop...\n" << std::flush;
-    // Wait until runFlag is set to false (by signal)
-    while (runFlag.load()) {
+    // Wait until g_runFlag is set to false (by signal)
+    while (g_runFlag.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
@@ -133,6 +136,7 @@ void TestMarketUpdatesRecv()
     auto totalPacketsProcessed = std::accumulate(packetsProcessed, packetsProcessed + consumerCount, 0);
     std::cout << "Total packets processed: " << totalPacketsProcessed << std::endl;
     std::cout << "Test complete." << std::endl;
+    g_orderBook.Print();
 }
 
 } // namespace Test
