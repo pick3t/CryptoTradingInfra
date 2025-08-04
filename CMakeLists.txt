@@ -4,6 +4,7 @@ project(CryptoTradingInfra LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_BUILD_TYPE Debug)
 
 # Diagnosis
 message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER}")
@@ -21,7 +22,7 @@ add_subdirectory(data)
 add_executable(trading_engine
     app/main.cpp
 )
-target_link_libraries(trading_engine utils)
+target_link_libraries(trading_engine utils data)
 
 # Testing (conditional build)
 if(BUILD_TESTS)
