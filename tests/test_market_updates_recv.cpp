@@ -64,7 +64,7 @@ void UdpReceiverThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuff
         ++status.packetsRecv;
         if (received == sizeof(MarketUpdate)) {
             MarketUpdate *update = reinterpret_cast<MarketUpdate *>(buffer);
-            while (!ringBuffer.Emplace(update->timestamp, update->price, update->size, update->side)) {
+            while (!ringBuffer.Emplace(update->side, update->price, update->size, update->timestamp)) {
                 std::this_thread::yield();
             }
             ++status.packetsEnqued;

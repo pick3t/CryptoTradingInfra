@@ -3,6 +3,11 @@
 
 #include <cstdint>
 
+namespace CryptoTradingInfra {
+
+using Price = double;
+using Size = double;
+
 #pragma pack(1)
 struct MarketUpdate {
     enum class Side : uint8_t {
@@ -11,14 +16,14 @@ struct MarketUpdate {
     };
 
     uint64_t timestamp;
-    double price;
-    double size;
+    Price price;
+    Size size;
     Side side;
     char resv[sizeof(uint64_t) - sizeof(side)];
 
     MarketUpdate() = default;
 
-    MarketUpdate(uint64_t timestamp, double price, double size, Side side) : resv{}
+    MarketUpdate(Side side, Price price, Size size, uint64_t timestamp = 0) : resv{0}
     {
         this->timestamp = timestamp;
         this->price = price;
@@ -29,5 +34,7 @@ struct MarketUpdate {
 #pragma pack()
 
 static_assert(sizeof(MarketUpdate) % sizeof(uint64_t) == 0, "MarketUpdate is not aligned to sizeof(uint64_t)");
+
+}
 
 #endif
