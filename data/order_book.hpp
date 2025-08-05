@@ -61,9 +61,6 @@ class OrderBook
 private:
     std::shared_ptr<BookState> bookState;
 
-    using TradeHandler = std::function<void(MarketUpdate::Side, Price, Size)>;
-    TradeHandler onTrade;
-
 public:
     OrderBook();
 

@@ -4,8 +4,8 @@ int main()
 {
     CryptoTradingInfra::Test::TestRingBuffer();
     CryptoTradingInfra::Test::TestOrderBookBasic();
-    CryptoTradingInfra::Test::TestOrderBookCrossTrades();
-    CryptoTradingInfra::Test::TestOrderBookMultiThreads();
+    CryptoTradingInfra::Test::TestExecutionEngineBasic();
+    CryptoTradingInfra::Test::TestExecutionEngineCrossTrades();
 
     CryptoTradingInfra::Test::TestMarketUpdatesRecv();
     return 0;

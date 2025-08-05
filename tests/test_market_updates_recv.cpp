@@ -111,6 +111,8 @@ void TestMarketUpdatesRecv()
     std::signal(SIGINT, SignalHandler);
 
     ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE> ringBuffer;
+    std::cout << "The size of ring buffer used is " << (static_cast<double>(ringBuffer.Size()) / (1024.0 * 1024.0))
+              << "MB." << std::endl;
 
     ReceiverStatus status { 0 };
     std::thread producer(UdpReceiverThread, std::ref(ringBuffer), std::ref(g_runFlag), udpPort, std::ref(status));
