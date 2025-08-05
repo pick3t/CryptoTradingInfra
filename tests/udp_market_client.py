@@ -19,6 +19,18 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
+class MarketUpdateHeader:
+    STRUCT_FORMAT = '<HH'   # little-endian, uint16_t, uint16_t
+    SIZE = struct.calcsize(STRUCT_FORMAT)
+    PROTOCOL_MARKET_UPDATE = 0x6666
+
+    def __init__(self, count=1, protocol=PROTOCOL_MARKET_UPDATE):
+        self.count = count
+        self.protocol = protocol
+
+    def pack(self):
+        return struct.pack(self.STRUCT_FORMAT, self.protocol, self.count)
+
 class MarketUpdate:
     # MarketUpdate struct:
     # uint64_t timestamp, double price, double size, uint8_t side
@@ -55,36 +67,40 @@ class MarketUpdate:
     def __repr__(self):
         return f"MarketUpdate(timestamp={self.timestamp}, price={self.price}, size={self.size}, side={'BID' if self.side else 'ASK'})"
 
+def make_marketupdate_packet(count):
+    """Pack a MarketUpdateHeader and `count` MarketUpdates, return bytes."""
+    header = MarketUpdateHeader(count)
+    updates = MarketUpdate.generate_batch(count)
+    return header.pack() + b''.join([u.pack() for u in updates]), updates
+
 def send_udp_packets(host, port, send_count, packets_per_second):
     global total_packets_sent
-
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     packets_sent = 0
+    batch_updates = MarketUpdate.generate_batch(send_count)
+    per_packet_send_interval = 1.0 / packets_per_second
+
     start_time = time.perf_counter()
     while packets_sent < send_count and running:
-        packets_to_send = min(packets_per_second, send_count - packets_sent)
+        per_packet_start_time = time.perf_counter()
+        sock.sendto(MarketUpdateHeader().pack() + batch_updates[packets_sent].pack(), (host, port))
 
-        batch_updates = MarketUpdate.generate_batch(packets_to_send)
-        for update in batch_updates:
-            per_packet_start_time = time.perf_counter()
-            sock.sendto(update.pack(), (host, port))
-            total_packets_sent += 1
-            if send_count <= 20:
-                print(update)
+        if send_count <= 20:
+            print(batch_updates[packets_sent])
 
-            per_packet_time_elapsed = time.perf_counter() - per_packet_start_time
-            per_packet_send_interval = 1.0 / packets_per_second
-            if per_packet_time_elapsed < per_packet_send_interval:
-                time.sleep(per_packet_send_interval - per_packet_time_elapsed)
+        total_packets_sent += 1
+        packets_sent += 1
 
-        packets_sent += packets_to_send
+        per_packet_time_elapsed = time.perf_counter() - per_packet_start_time
+        if per_packet_time_elapsed < per_packet_send_interval:
+            time.sleep(per_packet_send_interval - per_packet_time_elapsed)
 
         if packets_sent % 100_000 == 0 or packets_sent == send_count:
             print(f"Sent {packets_sent} packets in {time.perf_counter() - start_time}")
 
 
-def send_udp_packets_batch(host, port, send_count, packets_per_second):
+def send_udp_packets_per_sec(host, port, send_count, packets_per_second):
     global total_packets_sent
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -97,7 +113,7 @@ def send_udp_packets_batch(host, port, send_count, packets_per_second):
 
         batch_updates = MarketUpdate.generate_batch(packets_to_send)
         for update in batch_updates:
-            sock.sendto(update.pack(), (host, port))
+            sock.sendto(MarketUpdateHeader().pack() + update.pack(), (host, port))
             total_packets_sent += 1
             if send_count <= 20:
                 print(update)
@@ -111,6 +127,36 @@ def send_udp_packets_batch(host, port, send_count, packets_per_second):
         if packets_sent % 100_000 == 0 or packets_sent == send_count:
             print(f"Sent {packets_sent} packets in {time.perf_counter() - start_time}")
 
+def send_udp_packets_random_number_of_market_updates(host, port, send_count, packets_per_second):
+    global total_packets_sent
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    packets_sent = 0
+    per_packet_send_interval = 1.0 / packets_per_second
+    start_time = time.perf_counter()
+    while packets_sent < send_count and running:
+        packets_to_send = min(packets_per_second, send_count - packets_sent)
+
+        per_packet_start_time = time.perf_counter()
+        count = random.randint(1, 20)
+        packet, updates = make_marketupdate_packet(count)
+        sock.sendto(packet, (host, port))
+
+        if send_count <= 20:
+            print(f"Current packet has {count} MarketUpdates packed:")
+            print(*updates, sep='\n')
+
+        total_packets_sent += 1
+        packets_sent += 1
+
+        per_packet_time_elapsed = time.perf_counter() - per_packet_start_time
+        if per_packet_time_elapsed < per_packet_send_interval:
+            time.sleep(per_packet_send_interval - per_packet_time_elapsed)
+
+        if packets_sent % 100_000 == 0 or packets_sent == send_count:
+            print(f"Sent {packets_sent} packets in {time.perf_counter() - start_time}")
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Send MarketUpdate UDP packets.")
     parser.add_argument('--host', type=str, default='127.0.0.1', help='Receiver IP address')
@@ -120,6 +166,8 @@ def parse_args():
     parser.add_argument('--batch', type=bool, default=False, help='If turned on, number of packets specified by pps'
                         'will be sent immediately instead of being sent 1 by 1 based on calculated'
                         'sending rate(1.0s / pps)')
+    parser.add_argument('--rnum-updates', type=bool, default=False, help='If turned on, random number of MarketUpdates'
+                        '(1 - 20) will be packed into a single packet')
     args = parser.parse_args()
     return args
 
@@ -127,6 +175,9 @@ if __name__ == '__main__':
     args = parse_args()
     print(f'Start sending packets to {args.host} on port {args.port}')
     if args.batch:
-        send_udp_packets_batch(args.host, args.port, args.count, args.pps)
+        send_udp_packets_per_sec(args.host, args.port, args.count, args.pps)
     else:
-        send_udp_packets(args.host, args.port, args.count, args.pps)
+        if args.rnum_updates:
+            send_udp_packets_random_number_of_market_updates(args.host, args.port, args.count, args.pps)
+        else:
+            send_udp_packets(args.host, args.port, args.count, args.pps)

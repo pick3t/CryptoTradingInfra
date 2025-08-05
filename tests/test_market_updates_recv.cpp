@@ -59,19 +59,34 @@ void UdpReceiverThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuff
 
     std::cout << "Port " << port << " is listening\n" << std::flush;
 
-    char buffer[sizeof(MarketUpdate)];
+    char buffer[MAX_SIZE_BATCH_MARKET_UPDATE];
     while (g_runFlag.load(std::memory_order_relaxed)) {
         auto received = recv(sockfd, buffer, sizeof(buffer), MSG_DONTWAIT);
+        if (received < sizeof(MarketUpdateHeader)) {
+            ++status.packetsDiscarded;
+            std::this_thread::yield();
+            continue;
+        }
+
+        const MarketUpdateHeader* header = reinterpret_cast<const MarketUpdateHeader*>(buffer);
+        uint16_t protocol = ntohs(header->protocol);
+        uint16_t count = ntohs(header->count);
+        if (protocol != PROTOCOL_MARKET_UPDATE || count > MAX_COUNT_MARKET_UPDATE ||
+            received != sizeof(MarketUpdateHeader) + header->count * sizeof(MarketUpdate)) {
+            ++status.packetsDiscarded;
+            std::this_thread::yield();
+            continue;
+        }
+
         ++status.packetsRecv;
-        if (received == sizeof(MarketUpdate)) {
-            MarketUpdate *update = reinterpret_cast<MarketUpdate *>(buffer);
-            while (!ringBuffer.emplace(update->side, update->price, update->size, update->timestamp)) {
+
+        const MarketUpdatePacket* packet = reinterpret_cast<const MarketUpdatePacket*>(buffer);
+        for (auto i = 0; i < header->count; ++i) {
+            const auto& update = packet->updates[i];
+            while (!ringBuffer.emplace(update.side, update.price, update.size, update.timestamp)) {
                 std::this_thread::yield();
             }
             ++status.packetsEnqued;
-        } else {
-            ++status.packetsDiscarded;
-            std::this_thread::yield();
         }
     }
     close(sockfd);
