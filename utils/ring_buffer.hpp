@@ -38,7 +38,7 @@ class ConcurrentRingBuffer
     Container buffer;
 
     template <typename F>
-    bool AcquireAndSet(F&& setNodeData)
+    bool acquireAndSet(F&& setNodeData)
     {
         auto pos = tail.load(std::memory_order_relaxed);
 
@@ -79,22 +79,22 @@ public:
     ConcurrentRingBuffer& operator=(ConcurrentRingBuffer&&) = delete;
 
     template <typename U = T>
-    bool Push(U&& item)
+    bool push(U&& item)
     {
-        return AcquireAndSet([&](T& data) {
+        return acquireAndSet([&](T& data) {
             data = std::forward<U>(item);
         });
     }
 
     template <typename... Args>
-    bool Emplace(Args&&... args)
+    bool emplace(Args&&... args)
     {
-        return AcquireAndSet([&](T& data) {
+        return acquireAndSet([&](T& data) {
             new (&data) T(std::forward<Args>(args)...);
         });
     }
 
-    bool Pop(T& item)
+    bool pop(T& item)
     {
         auto pos = head.load(std::memory_order_relaxed);
 
@@ -119,21 +119,21 @@ public:
         }
     }
 
-    // Empty and Full only offer a quick snapshot of the current ring buffer and the result may immediately expire
+    // empty and full only offer a quick snapshot of the current ring buffer and the result may immediately expire
     // once called
-    bool Empty() const
+    bool empty() const
     {
         return head.load(std::memory_order_acquire) == tail.load(std::memory_order_acquire);
     }
 
-    bool Full() const
+    bool full() const
     {
         auto t = tail.load(std::memory_order_acquire);
         auto h = head.load(std::memory_order_acquire);
         return (t - h) >= CAP;
     }
 
-    size_t Size() const {
+    size_t size() const {
         return buffer.size() * sizeof(typename Container::value_type) + sizeof(head) + sizeof(tail);
     }
 };

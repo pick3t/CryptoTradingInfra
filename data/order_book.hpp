@@ -45,15 +45,15 @@ public:
     BookState& operator=(BookState&& other) = delete;
 
     template <MarketUpdate::Side Side>
-    void UpdateState(Price price, Size size);
+    void updateState(Price price, Size size);
 
     template <MarketUpdate::Side Side>
-    bool Empty() const;
+    bool empty() const;
 
-    std::optional<Item> BestBid() const;
-    std::optional<Item> BestAsk() const;
+    std::optional<Item> bestBid() const;
+    std::optional<Item> bestAsk() const;
 
-    void Print(size_t depth) const;
+    void print(size_t depth) const;
 };
 
 class OrderBook
@@ -64,12 +64,12 @@ private:
 public:
     OrderBook();
 
-    void UpdateOrderBook(const MarketUpdate& update);
+    void updateOrderBook(const MarketUpdate& update);
 
-    std::optional<BookState::Item> BestBid() const;
-    std::optional<BookState::Item> BestAsk() const;
+    std::optional<BookState::Item> bestBid() const;
+    std::optional<BookState::Item> bestAsk() const;
 
-    void Print(size_t depth = 5) const;
+    void print(size_t depth = 5) const;
 };
 
 } // namespace CryptoTradingInfra

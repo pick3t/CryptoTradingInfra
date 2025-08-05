@@ -34,7 +34,7 @@ BookState::BidsNAsks::operator const Asks&() const
 }
 
 template <MarketUpdate::Side Side>
-void BookState::UpdateState(Price price, Size size)
+void BookState::updateState(Price price, Size size)
 {
     using Chosen = std::conditional_t<Side == MarketUpdate::Side::BID, Bids, Asks>;
     Chosen& side = bidsNAsks;
@@ -52,7 +52,7 @@ void BookState::UpdateState(Price price, Size size)
 }
 
 template <MarketUpdate::Side Side>
-bool BookState::Empty() const
+bool BookState::empty() const
 {
     using Chosen = std::conditional_t<Side == MarketUpdate::Side::BID, Bids, Asks>;
     const Chosen& side = bidsNAsks;
@@ -62,7 +62,7 @@ bool BookState::Empty() const
 template <MarketUpdate::Side Side>
 std::optional<std::pair<Price, Size>> BookState::Best() const
 {
-    if (Empty<Side>()) {
+    if (empty<Side>()) {
         return std::nullopt;
     }
 
@@ -72,17 +72,17 @@ std::optional<std::pair<Price, Size>> BookState::Best() const
     return std::make_pair(best->first, best->second);
 }
 
-std::optional<BookState::Item> BookState::BestBid() const
+std::optional<BookState::Item> BookState::bestBid() const
 {
     return Best<MarketUpdate::Side::BID>();
 }
 
-std::optional<BookState::Item> BookState::BestAsk() const
+std::optional<BookState::Item> BookState::bestAsk() const
 {
     return Best<MarketUpdate::Side::ASK>();
 }
 
-void BookState::Print(size_t depth) const
+void BookState::print(size_t depth) const
 {
     depth = std::min(depth, MAX_DEPTH);
 
@@ -109,7 +109,7 @@ OrderBook::OrderBook()
     std::atomic_store(&bookState, std::make_shared<BookState>());
 }
 
-void OrderBook::UpdateOrderBook(const MarketUpdate& update)
+void OrderBook::updateOrderBook(const MarketUpdate& update)
 {
     while (true) {
         auto oldState = std::atomic_load_explicit(&bookState, std::memory_order_acquire);
@@ -120,9 +120,9 @@ void OrderBook::UpdateOrderBook(const MarketUpdate& update)
         Size remaining = update.size;
 
         if (side == MarketUpdate::Side::BID) {
-            newState->UpdateState<MarketUpdate::Side::BID>(update.price, update.size);
+            newState->updateState<MarketUpdate::Side::BID>(update.price, update.size);
         } else {
-            newState->UpdateState<MarketUpdate::Side::ASK>(update.price, update.size);
+            newState->updateState<MarketUpdate::Side::ASK>(update.price, update.size);
         }
 
         if (std::atomic_compare_exchange_weak_explicit(&bookState, &oldState, newState, std::memory_order_release,
@@ -134,22 +134,22 @@ void OrderBook::UpdateOrderBook(const MarketUpdate& update)
     }
 }
 
-std::optional<BookState::Item> OrderBook::BestBid() const
+std::optional<BookState::Item> OrderBook::bestBid() const
 {
     auto state = std::atomic_load_explicit(&bookState, std::memory_order_acquire);
-    return state->BestBid();
+    return state->bestBid();
 }
 
-std::optional<BookState::Item> OrderBook::BestAsk() const
+std::optional<BookState::Item> OrderBook::bestAsk() const
 {
     auto state = std::atomic_load_explicit(&bookState, std::memory_order_acquire);
-    return state->BestAsk();
+    return state->bestAsk();
 }
 
-void OrderBook::Print(size_t depth) const
+void OrderBook::print(size_t depth) const
 {
     auto state = std::atomic_load_explicit(&bookState, std::memory_order_acquire);
-    state->Print(depth);
+    state->print(depth);
 }
 
 } // namespace CryptoTradingInfra

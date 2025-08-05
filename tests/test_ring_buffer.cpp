@@ -26,11 +26,11 @@ void Producer(int id) {
     for (int i = 0; i < ITEMS_PER_PRODUCER; ++i) {
         int value = base + i;
         if (i < 2) {
-            while (!buffer.Push(value)) {
+            while (!buffer.push(value)) {
                 std::this_thread::yield();
             }
         } else {
-            while (!buffer.Emplace(value)) {
+            while (!buffer.emplace(value)) {
                 std::this_thread::yield();
             }
         }
@@ -40,7 +40,7 @@ void Producer(int id) {
 void Consumer() {
     int value;
     while (true) {
-        if (buffer.Pop(value)) {
+        if (buffer.pop(value)) {
             std::lock_guard<std::mutex> lock(results_mutex);
             results.insert(value);
         } else {

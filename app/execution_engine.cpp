@@ -15,19 +15,19 @@ TradingEngine::TradingEngine()
 void TradingEngine::print(int depth) const
 {
     auto state = std::atomic_load_explicit(&bookState, std::memory_order_acquire);
-    state->Print(depth);
+    state->print(depth);
 }
 
 std::optional<BookState::Item> TradingEngine::bestBid() const
 {
     auto state = std::atomic_load_explicit(&bookState, std::memory_order_acquire);
-    return state->BestBid();
+    return state->bestBid();
 }
 
 std::optional<BookState::Item> TradingEngine::bestAsk() const
 {
     auto state = std::atomic_load_explicit(&bookState, std::memory_order_acquire);
-    return state->BestAsk();
+    return state->bestAsk();
 }
 
 void TradingEngine::match(const MarketUpdate& update)
@@ -43,44 +43,44 @@ void TradingEngine::match(const MarketUpdate& update)
         Size remaining = update.size;
 
         if (side == MarketUpdate::Side::BID) {
-            while (remaining > 0 && !newState->Empty<MarketUpdate::Side::ASK>() &&
-                   newState->BestAsk()->first <= price) {
-                Price askPrice = newState->BestAsk()->first;
-                Size askSize = newState->BestAsk()->second;
+            while (remaining > 0 && !newState->empty<MarketUpdate::Side::ASK>() &&
+                   newState->bestAsk()->first <= price) {
+                Price askPrice = newState->bestAsk()->first;
+                Size askSize = newState->bestAsk()->second;
 
                 Size traded = std::min(remaining, askSize);
                 trades.emplace_back(MarketUpdate::Side::BID, askPrice, traded);
 
                 if (traded == askSize) {
-                    newState->UpdateState<MarketUpdate::Side::ASK>(askPrice, 0);
+                    newState->updateState<MarketUpdate::Side::ASK>(askPrice, 0);
                 } else {
-                    newState->UpdateState<MarketUpdate::Side::ASK>(askPrice, -traded);
+                    newState->updateState<MarketUpdate::Side::ASK>(askPrice, -traded);
                 }
                 remaining -= traded;
             }
 
             if (remaining > 0) {
-                newState->UpdateState<MarketUpdate::Side::BID>(price, remaining);
+                newState->updateState<MarketUpdate::Side::BID>(price, remaining);
             }
         } else {
-            while (remaining > 0 && !newState->Empty<MarketUpdate::Side::BID>() &&
-                   newState->BestBid()->first >= price) {
-                Price bidPrice = newState->BestBid()->first;
-                Size bidSize = newState->BestBid()->second;
+            while (remaining > 0 && !newState->empty<MarketUpdate::Side::BID>() &&
+                   newState->bestBid()->first >= price) {
+                Price bidPrice = newState->bestBid()->first;
+                Size bidSize = newState->bestBid()->second;
 
                 Size traded = std::min(remaining, bidSize);
                 trades.emplace_back(MarketUpdate::Side::ASK, bidPrice, traded);
 
                 if (traded == bidSize) {
-                    newState->UpdateState<MarketUpdate::Side::BID>(bidPrice, 0);
+                    newState->updateState<MarketUpdate::Side::BID>(bidPrice, 0);
                 } else {
-                    newState->UpdateState<MarketUpdate::Side::BID>(bidPrice, -traded);
+                    newState->updateState<MarketUpdate::Side::BID>(bidPrice, -traded);
                 }
                 remaining -= traded;
             }
 
             if (remaining > 0) {
-                newState->UpdateState<MarketUpdate::Side::ASK>(price, remaining);
+                newState->updateState<MarketUpdate::Side::ASK>(price, remaining);
             }
         }
 

@@ -21,14 +21,14 @@
 namespace CryptoTradingInfra {
 namespace Test {
 
-constexpr size_t BUFFER_SIZE = 409600;
+constexpr size_t BUFFER_SIZE = 4096000;
 
 struct ReceiverStatus {
     uint64_t packetsRecv;
     uint64_t packetsEnqued;
     uint64_t packetsDiscarded;
 
-    void Print()
+    void print()
     {
         std::cout << "Total packets received: " << packetsRecv << "\n"
                   << "Total packets enqued: " << packetsEnqued << "\n"
@@ -65,7 +65,7 @@ void UdpReceiverThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuff
         ++status.packetsRecv;
         if (received == sizeof(MarketUpdate)) {
             MarketUpdate *update = reinterpret_cast<MarketUpdate *>(buffer);
-            while (!ringBuffer.Emplace(update->side, update->price, update->size, update->timestamp)) {
+            while (!ringBuffer.emplace(update->side, update->price, update->size, update->timestamp)) {
                 std::this_thread::yield();
             }
             ++status.packetsEnqued;
@@ -84,15 +84,13 @@ void ConsumerThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuffer,
 {
     MarketUpdate update;
     while (g_runFlag.load(std::memory_order_relaxed)) {
-        if (ringBuffer.Pop(update)) {
+        if (ringBuffer.pop(update)) {
             ++packetsProcessed;
-            g_orderBook.UpdateOrderBook(update);
+            g_orderBook.updateOrderBook(update);
         } else {
             std::this_thread::yield();
         }
     }
-    std::lock_guard<std::mutex> lock(g_consumerCoutMutex);
-    std::cout << "[Consumer " << consumerId << "] Processed: " << packetsProcessed << " updates." << std::endl;
 }
 
 std::atomic<bool> g_runFlag { true };
@@ -111,7 +109,7 @@ void TestMarketUpdatesRecv()
     std::signal(SIGINT, SignalHandler);
 
     ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE> ringBuffer;
-    std::cout << "The size of ring buffer used is " << (static_cast<double>(ringBuffer.Size()) / (1024.0 * 1024.0))
+    std::cout << "The size of ring buffer used is " << (static_cast<double>(ringBuffer.size()) / (1024.0 * 1024.0))
               << "MB." << std::endl;
 
     ReceiverStatus status { 0 };
@@ -134,11 +132,11 @@ void TestMarketUpdatesRecv()
     for (auto& t : consumers)
         t.join();
 
-    status.Print();
+    status.print();
     auto totalPacketsProcessed = std::accumulate(packetsProcessed, packetsProcessed + consumerCount, 0);
     std::cout << "Total packets processed: " << totalPacketsProcessed << std::endl;
     std::cout << "Test complete." << std::endl;
-    g_orderBook.Print();
+    g_orderBook.print();
 }
 
 } // namespace Test

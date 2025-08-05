@@ -72,10 +72,10 @@ class ConcurrentRingBuffer
     Container buffer;
 public:
     template <typename U = T> // for perfect forwarding
-  	bool Push(U&&);
-    bool Pop(T&);
-    bool Empty();
-    bool Full();
+  	bool push(U&&);
+    bool pop(T&);
+    bool empty();
+    bool full();
     
     ConcurrentRingBuffer();
     // no destructor provided
@@ -99,10 +99,10 @@ public:
 
 **Methods:**
 
-- `Push`: push data to the next available position in the buffer
-- `Pop`: pop the first unconsumed data from the buffer
-- `Empty`: tells if the buffer is currently empty. This method only provides a brief snapshot and is not guaranteed that the result stays valid after it returns, unless further synchronization steps are taken(which obvisouly defeat the purpose of using a lock-free container).
-- `Full`: tells if the buffer is currently full. Save as above, don't rely on the result to perform any further actions to the ring buffer.
+- `push`: push data to the next available position in the buffer
+- `pop`: pop the first unconsumed data from the buffer
+- `empty`: tells if the buffer is currently empty. This method only provides a brief snapshot and is not guaranteed that the result stays valid after it returns, unless further synchronization steps are taken(which obvisouly defeat the purpose of using a lock-free container).
+- `full`: tells if the buffer is currently full. Save as above, don't rely on the result to perform any further actions to the ring buffer.
 
 ---
 
@@ -170,8 +170,8 @@ public:
         
         | Operation | Position (`pos`) | Real slot index    | Sequence value when ready | Sequence after operation |
         | --------- | ---------------- | ------------------ | ------------------------- | ------------------------ |
-        | Push      | *n*              | n & (Capacity - 1) | *n*                       | *n+1*                    |
-        | Pop       | *n*              | n & (Capacity - 1) | *n+1*                     | *n+Capacity*             |
+        | push      | *n*              | n & (Capacity - 1) | *n*                       | *n+1*                    |
+        | pop       | *n*              | n & (Capacity - 1) | *n+1*                     | *n+Capacity*             |
 
 4. **False Sharing & Cache Coherency**
 
@@ -184,7 +184,7 @@ public:
 ## 4. Pseudo Code For Producer
 
 ```cpp
-bool Push(item)
+bool push(item)
 {
     while (true) {
         pos = tail;
@@ -220,7 +220,7 @@ bool Push(item)
 ## 5. Pseudo Code For Consumer
 
 ```cpp
-bool Pop(item)
+bool pop(item)
 {
     while (true) {
         pos = head;
