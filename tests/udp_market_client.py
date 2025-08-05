@@ -61,8 +61,38 @@ def send_udp_packets(host, port, send_count, packets_per_second):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     packets_sent = 0
+    start_time = time.perf_counter()
     while packets_sent < send_count and running:
-        start_time = time.time()
+        packets_to_send = min(packets_per_second, send_count - packets_sent)
+
+        batch_updates = MarketUpdate.generate_batch(packets_to_send)
+        for update in batch_updates:
+            per_packet_start_time = time.perf_counter()
+            sock.sendto(update.pack(), (host, port))
+            total_packets_sent += 1
+            if send_count <= 20:
+                print(update)
+
+            per_packet_time_elapsed = time.perf_counter() - per_packet_start_time
+            per_packet_send_interval = 1.0 / packets_per_second
+            if per_packet_time_elapsed < per_packet_send_interval:
+                time.sleep(per_packet_send_interval - per_packet_time_elapsed)
+
+        packets_sent += packets_to_send
+
+        if packets_sent % 100_000 == 0 or packets_sent == send_count:
+            print(f"Sent {packets_sent} packets in {time.perf_counter() - start_time}")
+
+
+def send_udp_packets_batch(host, port, send_count, packets_per_second):
+    global total_packets_sent
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    packets_sent = 0
+    start_time = time.perf_counter()
+    while packets_sent < send_count and running:
+        batch_start_time = time.perf_counter()
         packets_to_send = min(packets_per_second, send_count - packets_sent)
 
         batch_updates = MarketUpdate.generate_batch(packets_to_send)
@@ -73,24 +103,30 @@ def send_udp_packets(host, port, send_count, packets_per_second):
                 print(update)
 
         packets_sent += packets_to_send
-        time_elapsed = time.time() - start_time
+        batch_time_elapsed = time.perf_counter() - batch_start_time
 
-        if time_elapsed < 1.0:
-            time.sleep(1.0 - time_elapsed)
+        if batch_time_elapsed < 1.0:
+            time.sleep(1.0 - batch_time_elapsed)
 
         if packets_sent % 100_000 == 0 or packets_sent == send_count:
-            print(f"Sent {packets_sent} packets.")
+            print(f"Sent {packets_sent} packets in {time.perf_counter() - start_time}")
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Send MarketUpdate UDP packets.")
     parser.add_argument('--host', type=str, default='127.0.0.1', help='Receiver IP address')
     parser.add_argument('--port', type=int, default=49152, help='Receiver UDP port')
     parser.add_argument('--count', type=int, default=5_000_000, help='Number of packets to send')
-    parser.add_argument('--interval', type=int, default=1_000_000, help='Number of packets to send per second')
+    parser.add_argument('--pps', type=int, default=1_000_000, help='Number of packets to send per second')
+    parser.add_argument('--batch', type=bool, default=False, help='If turned on, number of packets specified by pps'
+                        'will be sent immediately instead of being sent 1 by 1 based on calculated'
+                        'sending rate(1.0s / pps)')
     args = parser.parse_args()
     return args
 
 if __name__ == '__main__':
     args = parse_args()
     print(f'Start sending packets to {args.host} on port {args.port}')
-    send_udp_packets(args.host, args.port, args.count, args.interval)
+    if args.batch:
+        send_udp_packets_batch(args.host, args.port, args.count, args.pps)
+    else:
+        send_udp_packets(args.host, args.port, args.count, args.pps)
