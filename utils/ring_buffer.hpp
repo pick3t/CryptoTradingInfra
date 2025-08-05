@@ -132,6 +132,10 @@ public:
         auto h = head.load(std::memory_order_acquire);
         return (t - h) >= CAP;
     }
+
+    size_t Size() const {
+        return buffer.size() * sizeof(typename Container::value_type) + sizeof(head) + sizeof(tail);
+    }
 };
 
 #endif
