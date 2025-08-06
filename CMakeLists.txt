@@ -12,7 +12,7 @@ message(STATUS "C++ compiler version: ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "C++ compiler id: ${CMAKE_CXX_COMPILER_ID}")
 
 # Configuration options
-option(BUILD_TESTS "Build test programs" ON)
+option(BUILD_TESTS "Build test programs" ${RUN_TESTS})
 option(BUILD_BENCHMARKS "Build benchmark programs" OFF)
 
 add_subdirectory(utils)

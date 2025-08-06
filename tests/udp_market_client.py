@@ -163,7 +163,7 @@ def parse_args():
     parser.add_argument('--port', type=int, default=49152, help='Receiver UDP port')
     parser.add_argument('--count', type=int, default=5_000_000, help='Number of packets to send')
     parser.add_argument('--pps', type=int, default=1_000_000, help='Number of packets to send per second')
-    parser.add_argument('--batch', type=bool, default=False, help='If turned on, number of packets specified by pps'
+    parser.add_argument('--batch', type=bool, default=False, help='If turned on, number of packets specified by pps '
                         'will be sent immediately instead of being sent 1 by 1 based on calculated'
                         'sending rate(1.0s / pps)')
     parser.add_argument('--rnum-updates', type=bool, default=False, help='If turned on, random number of MarketUpdates'
