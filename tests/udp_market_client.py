@@ -20,7 +20,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 class MarketUpdateHeader:
-    STRUCT_FORMAT = '<HH'   # little-endian, uint16_t, uint16_t
+    STRUCT_FORMAT = '>HH'   # little-endian, uint16_t, uint16_t
     SIZE = struct.calcsize(STRUCT_FORMAT)
     PROTOCOL_MARKET_UPDATE = 0x6666
 
@@ -35,7 +35,7 @@ class MarketUpdate:
     # MarketUpdate struct:
     # uint64_t timestamp, double price, double size, uint8_t side
     # Equivalent to C++: <QddB (little-endian, 8-byte uint, double, double, 1-byte uint)
-    STRUCT_FORMAT = '<QddB7x'
+    STRUCT_FORMAT = '>QddB7x'
     SIZE = struct.calcsize(STRUCT_FORMAT)
 
     def __init__(self, timestamp, price, size, side):

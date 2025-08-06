@@ -3,6 +3,9 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <arpa/inet.h>
+
+#include "network.hpp"
 
 namespace CryptoTradingInfra {
 
@@ -16,6 +19,18 @@ constexpr uint16_t MAX_COUNT_MARKET_UPDATE = 20;
 struct MarketUpdateHeader {
     uint16_t protocol;
     uint16_t count;
+
+    void hton()
+    {
+        protocol = htons(protocol);
+        count = htons(count);
+    }
+
+    void ntoh()
+    {
+        protocol = ntohs(protocol);
+        count = ntohs(count);
+    }
 };
 
 struct MarketUpdate {
@@ -39,10 +54,24 @@ struct MarketUpdate {
         this->size = size;
         this->side = side;
     }
+
+    void hton()
+    {
+        timestamp = Utils::Network::Hton64(timestamp);
+        price = Utils::Network::Hton64(price);
+        size = Utils::Network::Hton64(size);
+    }
+
+    void ntoh()
+    {
+        timestamp = Utils::Network::Ntoh64(timestamp);
+        price = Utils::Network::Ntoh64(price);
+        size = Utils::Network::Ntoh64(size);
+    }
 };
 
 struct MarketUpdatePacket {
-    MarketUpdateHeader head;
+    MarketUpdateHeader header;
     MarketUpdate updates[];
 };
 

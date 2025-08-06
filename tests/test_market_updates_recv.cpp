@@ -68,10 +68,10 @@ void UdpReceiverThread(Utils::ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& r
             continue;
         }
 
-        const MarketUpdateHeader* header = reinterpret_cast<const MarketUpdateHeader*>(buffer);
-        uint16_t protocol = ntohs(header->protocol);
-        uint16_t count = ntohs(header->count);
-        if (protocol != PROTOCOL_MARKET_UPDATE || count > MAX_COUNT_MARKET_UPDATE ||
+        auto packet = reinterpret_cast<MarketUpdatePacket*>(buffer);
+        auto header = &packet->header;
+        header->ntoh();
+        if (header->protocol != PROTOCOL_MARKET_UPDATE || header->count > MAX_COUNT_MARKET_UPDATE ||
             received != sizeof(MarketUpdateHeader) + header->count * sizeof(MarketUpdate)) {
             ++status.packetsDiscarded;
             std::this_thread::yield();
@@ -80,8 +80,8 @@ void UdpReceiverThread(Utils::ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& r
 
         ++status.packetsRecv;
 
-        const MarketUpdatePacket* packet = reinterpret_cast<const MarketUpdatePacket*>(buffer);
         for (auto i = 0; i < header->count; ++i) {
+            packet->updates[i].ntoh();
             const auto& update = packet->updates[i];
             while (!ringBuffer.emplace(update.side, update.price, update.size, update.timestamp)) {
                 std::this_thread::yield();
