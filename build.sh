@@ -2,13 +2,17 @@
 set -e
 
 RUN_TESTS="OFF"
+RUN_BENCHMARKS="OFF"
 PROJECT_ROOT=$(realpath $(dirname "${BASH_SOURCE[0]}"))
 
 parse_args() {
-    while getopts ":t" opt; do
+    while getopts ":tb" opt; do
         case $opt in
             t)
                 RUN_TESTS="ON"
+                ;;
+            b)
+                RUN_BENCHMARKS="ON"
                 ;;
             *)
                 echo "Invalid option: -$OPTARG" >&2
@@ -45,7 +49,7 @@ detect_os_and_toolchain() {
 }
 
 build() {
-    cmake .. -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DRUN_TESTS=${RUN_TESTS}
+    cmake .. -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} -DRUN_TESTS=${RUN_TESTS} -DRUN_BENCHMARKS=${RUN_BENCHMARKS}
     make -j $JOBS
 }
 
@@ -56,12 +60,6 @@ main() {
     create_build_dir
     cd build/
     build
-
-    echo "run test=$RUN_TESTS"
-    if [ "$RUN_TESTS" == "ON" ]; then
-        cd ${PROJECT_ROOT}/build/tests/
-        ./test
-    fi
 }
 
 main "$@"

@@ -13,7 +13,7 @@ message(STATUS "C++ compiler id: ${CMAKE_CXX_COMPILER_ID}")
 
 # Configuration options
 option(BUILD_TESTS "Build test programs" ${RUN_TESTS})
-option(BUILD_BENCHMARKS "Build benchmark programs" OFF)
+option(BUILD_BENCHMARKS "Build benchmark programs" ${RUN_BENCHMARKS})
 
 add_subdirectory(utils)
 add_subdirectory(data)
@@ -27,6 +27,12 @@ target_link_libraries(trading_engine utils data)
 
 # Testing (conditional build)
 if(BUILD_TESTS)
+    if(BUILD_BENCHMARKS)
+        set(CMAKE_BUILD_TYPE Release)
+        set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
+        set(BENCHMARK_ENABLE_TESTING OFF)
+        add_subdirectory(external/benchmark)
+    endif()
     add_subdirectory(tests)
 endif()
 

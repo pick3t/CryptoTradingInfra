@@ -10,7 +10,7 @@ A reasonably low-latency and high-throughput demo for the real trading engine. I
 - If built on Apple, ensure that homebrew clang is correctly installed and configured. No Xcode clang is used in this project. Toolchain file is provided for MacOS.
 - The environment has Python3 support.
 -  `numpy` is installed. If not, try run `pip3 install numpy`.
-- The project is currently free of other third-party libraries.
+- The trading engine itself is currently free of other third-party libraries, while running benchmark would require google's benchmark (it's in git submodule) and boost (need to install yourself based on the package management tool you use).
 
 ### Supported Platforms
 
@@ -18,7 +18,7 @@ Currently build is tested on following systems (results of `uname -a`):
 
 - `Darwin Somebody'sMacBook-Pro.local 23.5.0 Darwin Kernel Version 23.5.0: Wed May  1 20:14:38 PDT 2024; root:xnu-10063.121.3~5/RELEASE_ARM64_T6020 arm64`
 
-- 
+- `Linux pick3t-desktop 5.15.167.4-microsoft-standard-WSL2 #1 SMP Tue Nov 5 00:21:55 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux`
 
 
 
@@ -26,14 +26,18 @@ To build the project, symply run:
 
 `bash build.sh`
 
-If you want to run testcases instantly after compilation:
+If you want to compile the test at the same time:
 
 `bash build.sh -t`
+
+Even run the benchmark yourself:
+
+`bash build.sh -t -b`
 
 ## Structure
 
 ```bash
-➜  CryptoTradingInfra git:(master) ✗ tree .
+➜  CryptoTradingInfra git:(master) ✗ tree --gitfile .
 .
 ├── CMakeLists.txt
 ├── README.md
@@ -50,6 +54,7 @@ If you want to run testcases instantly after compilation:
 │   └── order_book.hpp
 ├── tests
 │   ├── CMakeLists.txt
+│   ├── test_benchmark_ring_buffer.cpp
 │   ├── test_entries.hpp
 │   ├── test_execution_engine.cpp
 │   ├── test_main.cpp
@@ -65,6 +70,8 @@ If you want to run testcases instantly after compilation:
     ├── math.hpp
     ├── network.hpp
     └── ring_buffer.hpp
+
+6 directories, 26 files
 ```
 
 - **app/**

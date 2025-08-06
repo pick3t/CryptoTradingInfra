@@ -1,10 +1,10 @@
 #include "test_entries.hpp"
 
-#include <optional>
 #include <random>
 #include <thread>
 #include <iostream>
 #include <cassert>
+#include <atomic>
 
 #include "market_update.hpp"
 #include "order_book.hpp"
