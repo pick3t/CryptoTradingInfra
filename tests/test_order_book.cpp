@@ -28,7 +28,7 @@ void TestOrderBook()
         std::uniform_int_distribution<> randSize(1, 100);
         std::uniform_int_distribution<> randSide(0, 1);
 
-        for (int i = 0; i < UPDATES_PER_WRITER; ++i) {
+        for (auto i = 0; i < UPDATES_PER_WRITER; ++i) {
             book.updateOrderBook(
                 MarketUpdate(static_cast<MarketUpdate::Side>(randSide(rng)), randPrice(rng), randSize(rng)));
             if (i % 100 == 0) {
@@ -46,12 +46,12 @@ void TestOrderBook()
     };
 
     std::vector<std::thread> writers;
-    for (int i = 0; i < NUM_WRITERS; ++i) {
+    for (auto i = 0; i < NUM_WRITERS; ++i) {
         writers.emplace_back(writer, i);
     }
 
     std::vector<std::thread> readers;
-    for (int i = 0; i < NUM_READERS; ++i) {
+    for (auto i = 0; i < NUM_READERS; ++i) {
         readers.emplace_back(reader);
     }
 

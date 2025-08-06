@@ -1,13 +1,10 @@
 #include <atomic>
 #include <cstdint>
 #include <cstring>
-#include <functional>
 #include <iostream>
 #include <mutex>
 #include <numeric>
 #include <thread>
-#include <vector>
-#include <chrono>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -132,7 +129,7 @@ void TestMarketUpdatesRecv()
 
     std::vector<std::thread> consumers;
     uint64_t packetsProcessed[consumerCount] = { 0 };
-    for (int i = 0; i < consumerCount; ++i) {
+    for (auto i = 0; i < consumerCount; ++i) {
         consumers.emplace_back(ConsumerThread, std::ref(ringBuffer), std::ref(g_runFlag), i,
                                std::ref(packetsProcessed[i]));
     }
@@ -144,8 +141,9 @@ void TestMarketUpdatesRecv()
     }
 
     producer.join();
-    for (auto& t : consumers)
+    for (auto& t : consumers) {
         t.join();
+    }
 
     status.print();
     auto totalPacketsProcessed = std::accumulate(packetsProcessed, packetsProcessed + consumerCount, 0);

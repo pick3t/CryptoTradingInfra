@@ -148,6 +148,7 @@ std::optional<BookState::Item> OrderBook::bestAsk() const
 
 void OrderBook::print(size_t depth) const
 {
+    std::cout << "====OrderBook====" << std::endl;
     auto state = std::atomic_load_explicit(&bookState, std::memory_order_acquire);
     state->print(depth);
 }

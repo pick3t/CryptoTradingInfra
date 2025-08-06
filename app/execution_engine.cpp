@@ -1,5 +1,6 @@
 #include <memory>
 #include <thread>
+#include <iostream>
 
 #include "execution_engine.hpp"
 #include "market_update.hpp"
@@ -14,6 +15,7 @@ TradingEngine::TradingEngine()
 
 void TradingEngine::print(int depth) const
 {
+    std::cout << "===TradingEngine===" << std::endl;
     auto state = std::atomic_load_explicit(&bookState, std::memory_order_acquire);
     state->print(depth);
 }

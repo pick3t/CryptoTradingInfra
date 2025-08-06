@@ -17,7 +17,7 @@ constexpr int RING_CAPACITY = 10240;
 
 void Producer(Utils::ConcurrentRingBuffer<int, RING_CAPACITY>& buffer, std::mutex& resultsMutex, int id) {
     int base = id * ITEMS_PER_PRODUCER;
-    for (int i = 0; i < ITEMS_PER_PRODUCER; ++i) {
+    for (auto i = 0; i < ITEMS_PER_PRODUCER; ++i) {
         int value = base + i;
         if (i < 2) {
             while (!buffer.push(value)) {
@@ -55,12 +55,12 @@ void TestRingBuffer() {
     Utils::ConcurrentRingBuffer<int, RING_CAPACITY> buffer;
 
     std::vector<std::thread> producers;
-    for (int i = 0; i < NUM_PRODUCERS; ++i) {
+    for (auto i = 0; i < NUM_PRODUCERS; ++i) {
         producers.emplace_back(Producer, std::ref(buffer), std::ref(resultsMutex), i);
     }
 
     std::vector<std::thread> consumers;
-    for (int i = 0; i < NUM_CONSUMERS; ++i) {
+    for (auto i = 0; i < NUM_CONSUMERS; ++i) {
         consumers.emplace_back(Consumer, std::ref(buffer), std::ref(results), std::ref(resultsMutex));
     }
 
@@ -74,7 +74,7 @@ void TestRingBuffer() {
 
 #ifndef CRYPTO_TRADING_INFRA_BENCHMARK
     assert(results.size() == NUM_PRODUCERS * ITEMS_PER_PRODUCER);
-    for (int i = 0; i < NUM_PRODUCERS * ITEMS_PER_PRODUCER; ++i) {
+    for (auto i = 0; i < NUM_PRODUCERS * ITEMS_PER_PRODUCER; ++i) {
         if (results.find(i) == results.end()) {
             std::cout << "Missing value: " << i << std::endl;
         }

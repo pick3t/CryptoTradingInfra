@@ -23,7 +23,7 @@ add_subdirectory(app)
 add_executable(trading_engine
     app/main.cpp
 )
-target_link_libraries(trading_engine utils data)
+target_link_libraries(trading_engine PRIVATE utils data app)
 
 # Testing (conditional build)
 if(BUILD_TESTS)

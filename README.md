@@ -20,19 +20,125 @@ Currently build is tested on following systems (results of `uname -a`):
 
 - `Linux pick3t-desktop 5.15.167.4-microsoft-standard-WSL2 #1 SMP Tue Nov 5 00:21:55 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux`
 
-
+### Core Engine
 
 To build the project, symply run:
 
 `bash build.sh`
 
+The generated binary executable is `./build/trading_engine`.
+
+You can choose a port between 49152 and 65535 for the engine to listen to, for example:
+
+`./build/trading_engine 56789`
+
+If you don't specify the port, it will listen to 49152 by default.
+
+Once you bring up the engine, inject udp packets containing `MarketUpdate`s to the port you specified. You can use the [python script](###MarketUpdate Packet Generation Script) provided.
+
+Press Ctrl+C to stop the engine anytime you feel necessary to, and statistics will be printed once the job is done.
+
+```bash
+➜  CryptoTradingInfra git:(master) ✗ ./build/trading_engine
+Engine running. Press Ctrl+C to stop...
+Port 49152 is listening
+^C
+Signal (2) received, shutting down.
+Total packets received: 122593
+Total packets enqued: 122593
+Total packets Discarded: 2490373
+Total MarketUpdates processed: 122593
+Total Trades processed:        122593
+====OrderBook====
+Asks:
+100.002 @75
+100.008 @18
+100.014 @67
+100.014 @57
+100.016 @62
+Bids:
+199.999 @71
+199.999 @52
+199.995 @64
+199.994 @28
+199.994 @46
+===TradingEngine===
+Asks:
+168.174 @2
+175.852 @72
+175.991 @6
+176.236 @31
+176.292 @17
+Bids:
+160.205 @1
+143.256 @9
+130.77 @1
+129.98 @42
+129.543 @52
+```
+
+### Test
+
 If you want to compile the test at the same time:
 
 `bash build.sh -t`
 
-Even run the benchmark yourself:
+Execute testcases:
+
+`./build/tests/test`
+
+### Benchmark
+
+Download google's benchmark first, it's already delivered as a submodule:
+
+`git submodule update --init`
+
+Make sure you have boost installed, it's used to implement a traditional MPMC ring buffer using locks as the benchmark for comparison with our lock-free MPMC ring buffer.
+
+```bash
+# Depends on your system's package manager
+# For example:
+# MacOS, homebrew as package manager
+brew install boost
+# Linux, distro Ubuntu
+sudo apt-get install libboost-all-dev
+```
+
+Build the benchmark test for ring buffer:
 
 `bash build.sh -t -b`
+
+If successful, the generated binary executable called `test_benchmark_ring_buffer` will appear under `build/tests`.
+
+Run the test:
+
+`./build/tests/test_benchmark_ring_buffer`
+
+Example results (varies on systems):
+
+```bash
+➜  CryptoTradingInfra git:(master) ✗ uname -a
+Darwin pick3tdeMacBook-Pro.local 23.5.0 Darwin Kernel Version 23.5.0: Wed May  1 20:14:38 PDT 2024; root:xnu-10063.121.3~5/RELEASE_ARM64_T6020 arm64
+➜  CryptoTradingInfra git:(master) ✗ ./build/tests/test_benchmark_ring_buffer
+Unable to determine clock rate from sysctl: hw.cpufrequency: No such file or directory
+This does not affect benchmark measurements, only the metadata output.
+***WARNING*** Failed to set thread affinity. Estimated CPU frequency may be incorrect.
+2025-08-07T10:28:44+08:00
+Running ./build/tests/test_benchmark_ring_buffer
+Run on (12 X 24 MHz CPU s)
+CPU Caches:
+  L1 Data 64 KiB
+  L1 Instruction 128 KiB
+  L2 Unified 4096 KiB (x12)
+Load Average: 1.90, 2.32, 2.40
+------------------------------------------------------------------------
+Benchmark                              Time             CPU   Iterations
+------------------------------------------------------------------------
+BenchMarkConcurrentRingBuffer   14031437 ns      1109100 ns          637
+BenchMarkBoostRingBuffer        15502141 ns      1122256 ns          625
+```
+
+It seems like our lock-free design is working ^^.
 
 ## Structure
 
@@ -154,8 +260,6 @@ You can also add `--rnum-updates=True` to make the script generate packets conta
 python3 udp_market_client.py --host 127.0.0.1 --port 49152 --count 20 --pps 20 --rnum-updates=True
 ```
 
-
-
 #### Pitfalls
 
 Usually above is enough to test if the program is bahaving correctly according to our expectations, but sometimes we want to test the system's throughput and latency, requiring for large input.
@@ -197,3 +301,5 @@ What this option does under the hood, is to make sure the script will try its be
 
 - An executable to generate test packets written in C++, much more precisely than the python script
 - Support order cancellations
+
+- Introduce spdlog to record ecents
