@@ -3,7 +3,7 @@
 int main()
 {
     CryptoTradingInfra::Test::TestRingBuffer();
-    CryptoTradingInfra::Test::TestOrderBookBasic();
+    CryptoTradingInfra::Test::TestOrderBook();
     CryptoTradingInfra::Test::TestExecutionEngineBasic();
     CryptoTradingInfra::Test::TestExecutionEngineCrossTrades();
 

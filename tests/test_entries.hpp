@@ -7,7 +7,7 @@ namespace Test {
 void TestMarketUpdatesRecv();
 void TestRingBuffer();
 
-void TestOrderBookBasic();
+void TestOrderBook();
 void TestExecutionEngineBasic();
 void TestExecutionEngineCrossTrades();
 

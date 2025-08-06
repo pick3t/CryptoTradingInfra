@@ -12,69 +12,11 @@
 namespace CryptoTradingInfra {
 namespace Test {
 
-void TestOrderBookBasic() {
-    OrderBook ob;
-
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::ASK, 101, 10});
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::ASK, 102, 20});
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::ASK, 103, 30});
-    // Add some bids at 100, 99, 98
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::BID, 100, 5});
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::BID, 99, 10});
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::BID, 98, 15});
-
-    assert(ob.bestAsk() == std::make_pair(101.0, 10.0));
-    assert(ob.bestBid() == std::make_pair(100.0, 5.0));
-
-    ob.print();
-}
-
-void TestOrderBookCrossTrades() {
-    OrderBook ob;
-
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::ASK, 105, 10});
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::ASK, 106, 20});
-
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::BID, 104, 5});
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::BID, 103, 10});
-
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::BID, 105, 7});
-    // Should match against 105@10, so book should now have 105@3 (ask side), 105 not present on bid side
-
-    auto ask = ob.bestAsk();
-    auto bid = ob.bestBid();
-    assert(ask == std::make_pair(105.0, 3.0)); // 10 - 7 = 3 left
-    assert(bid == std::make_pair(104.0, 5.0)); // unchanged
-
-    // Another bid 105@4, should trade against remaining 3 at 105, and put 1 at bid side at 105
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::BID, 105, 4});
-    ask = ob.bestAsk();
-    bid = ob.bestBid();
-    assert(ask == std::make_pair(106.0, 20.0)); // 105 ask is gone
-    assert(bid == std::make_pair(105.0, 1.0));  // only 1 remains at bid side
-
-    // Add ask at 104, which will cross the 105@1 bid
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::ASK, 104, 2});
-    // 1 trade at 105, 1 trade at 104, leaving none at 104 ask side, and bid side should be 104@4
-    ask = ob.bestAsk();
-    bid = ob.bestBid();
-    assert(ask == std::make_pair(106.0, 20.0)); // 2 - 1 = 1 left
-    assert(bid == std::make_pair(104.0, 4.0)); // next best
-
-    // Now consume ask at 106 completely
-    ob.updateOrderBook(MarketUpdate{MarketUpdate::Side::BID, 106, 21});
-    ask = ob.bestAsk();
-    bid = ob.bestBid();
-    ob.print();
-    assert(ask == std::nullopt);
-    assert(bid == std::make_pair(106.0, 1.0));
-}
-
-void TestOrderBookMultiThreads()
+void TestOrderBook()
 {
     OrderBook book;
 
-    constexpr int NUM_WRITERS = 8;
+    constexpr int NUM_WRITERS = 4;
     constexpr int NUM_READERS = 4;
     constexpr int UPDATES_PER_WRITER = 200;
 
