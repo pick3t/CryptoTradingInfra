@@ -15,7 +15,7 @@ constexpr int NUM_CONSUMERS = 4;
 constexpr int ITEMS_PER_PRODUCER = 10000;
 constexpr int RING_CAPACITY = 1024;
 
-ConcurrentRingBuffer<int, RING_CAPACITY> buffer;
+Utils::ConcurrentRingBuffer<int, RING_CAPACITY> buffer;
 
 // A thread-safe set to collect popped values
 std::set<int> results;

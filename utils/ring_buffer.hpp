@@ -9,13 +9,16 @@
 
 #include "math.hpp"
 
+namespace CryptoTradingInfra {
+namespace Utils {
+
 /* sourced from examples in cpp reference, size of cache line is typically 64 bytes on most modern systems*/
 #ifdef __cpp_lib_hardware_interference_size
-    using std::hardware_constructive_interference_size;
-    using std::hardware_destructive_interference_size;
+using std::hardware_constructive_interference_size;
+using std::hardware_destructive_interference_size;
 #else
-    constexpr std::size_t hardware_constructive_interference_size = 64;
-    constexpr std::size_t hardware_destructive_interference_size = 64;
+constexpr std::size_t hardware_constructive_interference_size = 64;
+constexpr std::size_t hardware_destructive_interference_size = 64;
 #endif
 
 #define CACHE_LINE_ALIGNED alignas(hardware_destructive_interference_size)
@@ -32,7 +35,7 @@ class ConcurrentRingBuffer
         T data;
     };
 
-    static constexpr auto CAP = NextPowerOf2<Capacity>();
+    static constexpr auto CAP = Math::NextPowerOf2<Capacity>();
 
     using Container = std::vector<Node>;
     Container buffer;
@@ -81,17 +84,13 @@ public:
     template <typename U = T>
     bool push(U&& item)
     {
-        return acquireAndSet([&](T& data) {
-            data = std::forward<U>(item);
-        });
+        return acquireAndSet([&](T& data) { data = std::forward<U>(item); });
     }
 
     template <typename... Args>
-    bool emplace(Args&&... args)
+    bool emplace(Args&&...args)
     {
-        return acquireAndSet([&](T& data) {
-            new (&data) T(std::forward<Args>(args)...);
-        });
+        return acquireAndSet([&](T& data) { new (&data) T(std::forward<Args>(args)...); });
     }
 
     bool pop(T& item)
@@ -133,9 +132,12 @@ public:
         return (t - h) >= CAP;
     }
 
-    size_t size() const {
+    size_t size() const
+    {
         return buffer.size() * sizeof(typename Container::value_type) + sizeof(head) + sizeof(tail);
     }
 };
+} // namespace Utils
+} // namespace CryptoTradingInfra
 
 #endif

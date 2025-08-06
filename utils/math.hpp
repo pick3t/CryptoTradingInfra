@@ -3,10 +3,16 @@
 
 #include <cstdint>
 
+namespace CryptoTradingInfra {
+namespace Utils {
+namespace Math {
+
 template <uint64_t N>
-constexpr uint64_t NextPowerOf2() {
+constexpr uint64_t NextPowerOf2()
+{
     auto n = N;
-    if (n <= 1) return 1;
+    if (n <= 1)
+        return 1;
     n--;
     n |= n >> 1;
     n |= n >> 2;
@@ -16,5 +22,9 @@ constexpr uint64_t NextPowerOf2() {
     n |= n >> 32;
     return n + 1;
 }
+
+} // namespace Math
+} // namespace Utils
+} // namespace CryptoTradingInfra
 
 #endif

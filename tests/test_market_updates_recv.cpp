@@ -37,7 +37,7 @@ struct ReceiverStatus {
     }
 };
 
-void UdpReceiverThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuffer, std::atomic<bool>& g_runFlag,
+void UdpReceiverThread(Utils::ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuffer, std::atomic<bool>& g_runFlag,
                        uint16_t port, ReceiverStatus& status)
 {
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -94,7 +94,7 @@ void UdpReceiverThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuff
 
 std::mutex g_consumerCoutMutex;
 OrderBook g_orderBook;
-void ConsumerThread(ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuffer, std::atomic<bool>& g_runFlag,
+void ConsumerThread(Utils::ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE>& ringBuffer, std::atomic<bool>& g_runFlag,
                     int consumerId, uint64_t& packetsProcessed)
 {
     MarketUpdate update;
@@ -123,7 +123,7 @@ void TestMarketUpdatesRecv()
 
     std::signal(SIGINT, SignalHandler);
 
-    ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE> ringBuffer;
+    Utils::ConcurrentRingBuffer<MarketUpdate, BUFFER_SIZE> ringBuffer;
     std::cout << "The size of ring buffer used is " << (static_cast<double>(ringBuffer.size()) / (1024.0 * 1024.0))
               << "MB." << std::endl;
 
