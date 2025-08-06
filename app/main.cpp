@@ -1,6 +1,6 @@
 #include <cstdint>
 
-#if __cplusplus < 202002L
+#if __cplusplus < 201703L
 #error "C++20 standard support required."
 #endif
 
