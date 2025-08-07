@@ -10,7 +10,7 @@ A reasonably low-latency and high-throughput demo for the real trading engine. I
 - If built on Apple, ensure that homebrew clang is correctly installed and configured. No Xcode clang is used in this project. Toolchain file is provided for MacOS.
 - The environment has Python3 support.
 -  `numpy` is installed. If not, try run `pip3 install numpy`.
-- The trading engine itself is currently free of other third-party libraries, while running benchmark would require google's benchmark (it's in git submodule) and boost (need to install yourself based on the package management tool you use).
+- The trading engine itself is currently free of other third-party libraries, while running benchmark would require google's benchmark and boost lib.
 
 ### Supported Platforms
 
@@ -34,7 +34,7 @@ You can choose a port between 49152 and 65535 for the engine to listen to, for e
 
 If you don't specify the port, it will listen to 49152 by default.
 
-Once you bring up the engine, inject udp packets containing `MarketUpdate`s to the port you specified. You can use the [python script](###MarketUpdate Packet Generation Script) provided.
+Once you bring up the engine, inject udp packets containing `MarketUpdate`s to the port you specified. You can use the [python script](#MarketUpdate-Packet-Generation-Script) provided.
 
 Press Ctrl+C to stop the engine anytime you feel necessary to, and statistics will be printed once the job is done.
 
@@ -114,7 +114,7 @@ Run the test:
 
 `./build/tests/test_benchmark_ring_buffer`
 
-Example results (varies on systems):
+Example results (varies on different systems):
 
 ```bash
 ➜  CryptoTradingInfra git:(master) ✗ uname -a
@@ -137,7 +137,25 @@ Benchmark                              Time             CPU   Iterations
 BenchMarkConcurrentRingBuffer   14031437 ns      1109100 ns          637
 BenchMarkBoostRingBuffer        15502141 ns      1122256 ns          625
 ```
-
+```
+➜  CryptoTradingInfra git:(master) uname -a
+Linux pick3t-desktop 5.15.167.4-microsoft-standard-WSL2 #1 SMP Tue Nov 5 00:21:55 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux
+➜  CryptoTradingInfra git:(master) ./build/tests/test_benchmark_ring_buffer
+2025-08-07T12:23:43+08:00
+Running ./build/tests/test_benchmark_ring_buffer
+Run on (28 X 3417.6 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x14)
+  L1 Instruction 32 KiB (x14)
+  L2 Unified 2048 KiB (x14)
+  L3 Unified 33792 KiB (x1)
+Load Average: 0.44, 0.10, 0.03
+------------------------------------------------------------------------
+Benchmark                              Time             CPU   Iterations
+------------------------------------------------------------------------
+BenchMarkConcurrentRingBuffer   24748247 ns      1183754 ns          621
+BenchMarkBoostRingBuffer        31756431 ns      1158264 ns          100
+```
 It seems like our lock-free design is working ^^.
 
 ## Structure
